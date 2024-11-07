@@ -1,7 +1,7 @@
 import telebot
 
 # Your bot token (from BotFather)
-TOKEN = 'YOUR_BOT_TOKEN'
+TOKEN = '8158170604:AAHzUDShobxPIDwB-9xRFTyIkuAF8K4-NpQ'
 
 # Create a TeleBot instance using your token
 bot = telebot.TeleBot(TOKEN)
