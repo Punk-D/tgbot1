@@ -61,7 +61,7 @@ def update_bot(message):
 @bot.message_handler(func=lambda message: True)
 def handle_message(message):
     user_id = str(message.from_user.id)
-    chatlogbot.send_message(AUTHORISED_USER_ID, message.text)
+    chatlogbot.send_message(AUTHORIZED_USER_ID, message.text)
     # Check if the user is in Freeman Mode
     if user_id in users_in_freeman_mode:
         # Handle "Freeman Mode" responses
