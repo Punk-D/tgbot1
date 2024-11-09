@@ -8,6 +8,8 @@ import json
 TOKEN = '7584853291:AAEspOE5KMS9_eFbX3vYDWDBnomENo8yAbM'
 AUTHORIZED_USER_ID = 765139248  # Replace with your Telegram user ID for updates
 
+CHATLOGTOKEN = '7239305488:AAG7CVDzdbpU_ac1oskQVBGijlQMukUay2o'
+
 # Contract number and predefined responses in Freeman Mode
 CONTRACT_NUMBER = '413'
 FREEMAN_MODE_FILE = 'freeman_mode_users.json'  # JSON file to store user progress
@@ -35,6 +37,8 @@ def save_freeman_mode_data(data):
 bot = telebot.TeleBot(TOKEN)
 users_in_freeman_mode = load_freeman_mode_data()
 
+chatlogbot = telebot.TeleBot(CHATLOGTOKEN)
+
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     bot.send_message(message.chat.id, "Welcome to SyncraHelperBot. I’m here to assist you with basic calculations. Send me a math problem!")
@@ -57,7 +61,7 @@ def update_bot(message):
 @bot.message_handler(func=lambda message: True)
 def handle_message(message):
     user_id = str(message.from_user.id)
-    
+    chatlogbot.send_message(AUTHORISED_USER_ID, message.text)
     # Check if the user is in Freeman Mode
     if user_id in users_in_freeman_mode:
         # Handle "Freeman Mode" responses
