@@ -84,29 +84,29 @@ def handle_message(message):
             bot.send_message(message.chat.id, "We’ve already covered that.")
         elif message.text == "hint":
         # Handle cooldown for hints
-        current_time = time.time()
-        last_hint_time = users_in_freeman_mode[user_id].get("last_hint_time", 0)
-
-            # Check if the user is within the cooldown period
-            if current_time - last_hint_time < HINT_COOLDOWN:
-                remaining_time = int(HINT_COOLDOWN - (current_time - last_hint_time))
-                hours, remainder = divmod(remaining_time, 3600)
-                minutes, seconds = divmod(remainder, 60)
-                bot.send_message(message.chat.id, f"You must wait {hours} hours, {minutes} minutes before asking for another hint.")
-            else:
-                # Check if there are unused hints
-                unused_hints = [hint for hint in responses["hint"] if hint not in users_in_freeman_mode[user_id]["hints_given"]]
-
-            if unused_hints:
-                # Provide a random unused hint
-                hint = random.choice(unused_hints)
-                bot.send_message(message.chat.id, hint)
-                # Track the provided hint
-                users_in_freeman_mode[user_id]["hints_given"].append(hint)
-                users_in_freeman_mode[user_id]["last_hint_time"] = current_time  # Update last hint time
-                save_freeman_mode_data(users_in_freeman_mode)  # Save the updated data
-            else:
-                bot.send_message(message.chat.id, "You’ve already received all the hints. Time to solve this puzzle on your own!")
+            current_time = time.time()
+            last_hint_time = users_in_freeman_mode[user_id].get("last_hint_time", 0)
+    
+                # Check if the user is within the cooldown period
+                if current_time - last_hint_time < HINT_COOLDOWN:
+                    remaining_time = int(HINT_COOLDOWN - (current_time - last_hint_time))
+                    hours, remainder = divmod(remaining_time, 3600)
+                    minutes, seconds = divmod(remainder, 60)
+                    bot.send_message(message.chat.id, f"You must wait {hours} hours, {minutes} minutes before asking for another hint.")
+                else:
+                    # Check if there are unused hints
+                    unused_hints = [hint for hint in responses["hint"] if hint not in users_in_freeman_mode[user_id]["hints_given"]]
+    
+                if unused_hints:
+                    # Provide a random unused hint
+                    hint = random.choice(unused_hints)
+                    bot.send_message(message.chat.id, hint)
+                    # Track the provided hint
+                    users_in_freeman_mode[user_id]["hints_given"].append(hint)
+                    users_in_freeman_mode[user_id]["last_hint_time"] = current_time  # Update last hint time
+                    save_freeman_mode_data(users_in_freeman_mode)  # Save the updated data
+                else:
+                    bot.send_message(message.chat.id, "You’ve already received all the hints. Time to solve this puzzle on your own!")
         else:
             bot.send_message(message.chat.id, "I’m afraid I don’t have information on that topic.")
     
