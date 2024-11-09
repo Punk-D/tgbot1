@@ -44,7 +44,7 @@ def update_bot(message):
     if message.from_user.id == AUTHORIZED_USER_ID:
         bot.send_message(message.chat.id, "Checking for updates...")
         try:
-            subprocess.run(['git', 'pull', 'origin', 'main'], check=True)
+            subprocess.run(['git', 'pull', 'origin', 'master'], check=True)
             bot.send_message(message.chat.id, "Bot updated successfully.")
             # Restart the bot
             os.execv(__file__, ['python'] + sys.argv)
