@@ -14,7 +14,8 @@ def send_welcome(message):
 @bot.message_handler(func=lambda message: True)
 def echo_message(message):
     if message.text == 'B':  # Check if the message is "B"
-        bot.send_message(message.chat.id, """import telebot
+        while True:
+            bot.send_message(message.chat.id, """import telebot
 
 # Your bot token (from BotFather)
 TOKEN = '8158170604:AAHzUDShobxPIDwB-9xRFTyIkuAF8K4-NpQ'
