@@ -47,7 +47,7 @@ def update_bot(message):
             subprocess.run(['git', 'pull', 'origin', 'master'], check=True)
             bot.send_message(message.chat.id, "Bot updated successfully.")
             # Restart the bot
-            os.execv(__file__, ['python'] + sys.argv)
+            os.execv(__file__, ['python'] + 'Tgbot4.py')
         except subprocess.CalledProcessError:
             bot.send_message(message.chat.id, "Failed to update the bot. Please check the repository.")
     else:
