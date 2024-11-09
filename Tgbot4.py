@@ -3,7 +3,9 @@ import subprocess
 import os
 import sys
 import json
-#random ahh comment
+import random
+import time
+
 # Bot token and authorized user ID for updates
 TOKEN = '7584853291:AAEspOE5KMS9_eFbX3vYDWDBnomENo8yAbM'
 AUTHORIZED_USER_ID = 765139248  # Replace with your Telegram user ID for updates
@@ -17,7 +19,12 @@ FREEMAN_MODE_FILE = 'freeman_mode_users.json'  # JSON file to store user progres
 # Predefined Freeman Mode responses
 responses = {
     "diary": "Oh, you want to see my diary? I bet you already know where it is. The key to decrypt those files is: influenceproject",
-    "hint": "Remember, the truth lies in the numbers. Start with CBC 128 encryption.",
+    "hint": [
+        "Be attentive. Start with CBC 128 encryption.",
+        "Remember, the files are encrypted for a reason.",
+        "Subtle details matter. Trust your instincts.",
+        "The key is hidden, but it’s not far away.",
+    ],
     "code": "The company hides more than it shows. Watch out for subtle messages."
 }
 
@@ -38,6 +45,9 @@ bot = telebot.TeleBot(TOKEN)
 users_in_freeman_mode = load_freeman_mode_data()
 
 chatlogbot = telebot.TeleBot(CHATLOGTOKEN)
+
+# Cooldown duration in seconds (4 hours = 14400 seconds)
+HINT_COOLDOWN = 14400  # 4 hours
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
@@ -62,6 +72,7 @@ def update_bot(message):
 def handle_message(message):
     user_id = str(message.from_user.id)
     chatlogbot.send_message(AUTHORIZED_USER_ID, message.from_user.username+" : "+message.text)
+    
     # Check if the user is in Freeman Mode
     if user_id in users_in_freeman_mode:
         # Handle "Freeman Mode" responses
@@ -79,6 +90,28 @@ def handle_message(message):
         users_in_freeman_mode[user_id] = []  # Initialize empty list for tracking used responses
         save_freeman_mode_data(users_in_freeman_mode)
         bot.send_message(message.chat.id, f"Hello, {message.from_user.first_name}. I see your curiosity led you far. I can answer if you’re on the right path.")
+    
+    elif message.text == "hint":
+        # Handle cooldown for hints
+        current_time = time.time()
+        if user_id not in users_in_freeman_mode:
+            users_in_freeman_mode[user_id] = {}
+
+        last_hint_time = users_in_freeman_mode[user_id].get("last_hint_time", 0)
+
+        # Check if the user is within the cooldown period
+        if current_time - last_hint_time < HINT_COOLDOWN:
+            remaining_time = int(HINT_COOLDOWN - (current_time - last_hint_time))
+            hours, remainder = divmod(remaining_time, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            bot.send_message(message.chat.id, f"You must wait {hours} hours, {minutes} minutes before asking for another hint.")
+        else:
+            # Provide a random hint
+            hint = random.choice(responses["hint"])
+            bot.send_message(message.chat.id, hint)
+            # Update last hint time
+            users_in_freeman_mode[user_id]["last_hint_time"] = current_time
+            save_freeman_mode_data(users_in_freeman_mode)  # Save the updated data
     
     elif message.text.replace(" ", "").isdigit():
         # Calculator Mode
