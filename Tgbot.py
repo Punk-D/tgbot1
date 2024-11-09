@@ -34,8 +34,9 @@ receiver = InputPeerUser(user_id, access_hash)
 
 try:
     # Send the message to the user
-    client.send_message(receiver, message, parse_mode='html')
-    print("Message sent successfully!")
+   while True:
+       client.send_message(receiver, message, parse_mode='html')
+       print("Message sent successfully!")
 except Exception as e:
     # Handle any errors (e.g., wrong user ID, access hash, etc.)
     print(f"Error occurred: {e}")
