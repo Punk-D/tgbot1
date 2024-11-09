@@ -85,7 +85,7 @@ def handle_message(message):
     
     else:
         # Default response for unrecognized messages outside of Freeman Mode
-        bot.send_message(message.chat.id, "I don't know who you are and what you want. If you won't type your number, I'll ignore you.")
+        bot.send_message(message.chat.id, "I don't know who you are and what you want. If you won't type your number, I'll ignore you. Updated")
 
 # Start polling to keep the bot running
 bot.polling()
