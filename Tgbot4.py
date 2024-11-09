@@ -21,6 +21,8 @@ responses = {
     "diary": "Oh, you want to see my diary? I bet you already know where it is. The key to decrypt those files is: influenceproject",
     "code": "The company hides more than it shows. Watch out for subtle messages."
 }
+
+# Predefined hints
 hints = [
     "Be attentive. Start with CBC 128 encryption.",
     "Remember, the files are encrypted for a reason.",
@@ -71,23 +73,24 @@ def update_bot(message):
 @bot.message_handler(func=lambda message: True)
 def handle_message(message):
     user_id = str(message.from_user.id)
-    chatlogbot.send_message(AUTHORIZED_USER_ID, message.from_user.username+" : "+message.text)
+    chatlogbot.send_message(AUTHORIZED_USER_ID, message.from_user.username + " : " + message.text)
     
     # Check if the user is in Freeman Mode
     if user_id in users_in_freeman_mode:
         # Handle "Freeman Mode" responses
-        if message.text in responses and message.text not in users_in_freeman_mode[user_id]:
+        if message.text in responses and message.text not in users_in_freeman_mode[user_id]["responses_given"]:
             bot.send_message(message.chat.id, responses[message.text])
-            users_in_freeman_mode[user_id].append(message.text)  # Mark response as used
+            users_in_freeman_mode[user_id]["responses_given"].append(message.text)  # Mark response as used
             save_freeman_mode_data(users_in_freeman_mode)  # Save the updated data
-        elif message.text in users_in_freeman_mode[user_id]:
+        elif message.text in users_in_freeman_mode[user_id]["responses_given"]:
             bot.send_message(message.chat.id, "We’ve already covered that.")
+        
+        # Handle hint requests with cooldown
         elif message.text == "hint":
-        # Handle cooldown for hints
             current_time = time.time()
             last_hint_time = users_in_freeman_mode[user_id].get("last_hint_time", 0)
     
-                # Check if the user is within the cooldown period
+            # Check if the user is within the cooldown period
             if current_time - last_hint_time < HINT_COOLDOWN:
                 remaining_time = int(HINT_COOLDOWN - (current_time - last_hint_time))
                 hours, remainder = divmod(remaining_time, 3600)
@@ -95,29 +98,28 @@ def handle_message(message):
                 bot.send_message(message.chat.id, f"You must wait {hours} hours, {minutes} minutes before asking for another hint.")
             else:
                 # Check if there are unused hints
-                unused_hints = [hint for hint in responses["hint"] if hint not in users_in_freeman_mode[user_id]["hints_given"]]
+                unused_hints = [hint for hint in hints if hint not in users_in_freeman_mode[user_id]["hints_given"]]
     
-            if unused_hints:
-                # Provide a random unused hint
-                hint = random.choice(unused_hints)
-                bot.send_message(message.chat.id, hint)
-                # Track the provided hint
-                users_in_freeman_mode[user_id]["hints_given"].append(hint)
-                users_in_freeman_mode[user_id]["last_hint_time"] = current_time  # Update last hint time
-                save_freeman_mode_data(users_in_freeman_mode)  # Save the updated data
-            else:
-                bot.send_message(message.chat.id, "You’ve already received all the hints. Time to solve this puzzle on your own!")
+                if unused_hints:
+                    # Provide a random unused hint
+                    hint = random.choice(unused_hints)
+                    bot.send_message(message.chat.id, hint)
+                    # Track the provided hint
+                    users_in_freeman_mode[user_id]["hints_given"].append(hint)
+                    users_in_freeman_mode[user_id]["last_hint_time"] = current_time  # Update last hint time
+                    save_freeman_mode_data(users_in_freeman_mode)  # Save the updated data
+                else:
+                    bot.send_message(message.chat.id, "You’ve already received all the hints. Time to solve this puzzle on your own!")
+        
         else:
             bot.send_message(message.chat.id, "I’m afraid I don’t have information on that topic.")
     
     elif message.text == CONTRACT_NUMBER:
         # Activate Freeman Mode for this specific user
-        users_in_freeman_mode[user_id] = {"hints_given": []}  # Initialize data with an empty list for tracking used hints
+        users_in_freeman_mode[user_id] = {"hints_given": [], "responses_given": []}  # Initialize data with empty lists
         save_freeman_mode_data(users_in_freeman_mode)
         bot.send_message(message.chat.id, f"Hello, {message.from_user.first_name}. I see your curiosity led you far. I can answer if you’re on the right path.")
     
-    
-
     elif message.text.replace(" ", "").isdigit():
         # Calculator Mode
         try:
