@@ -7,6 +7,8 @@ api_id = '25583069'  # Replace with your actual api_id
 api_hash = 'ead2f37b8ce17ef8dbe6a25cb42ad786'  # Replace with your actual api_hash
 phone = '+37379171154'  # Replace with your phone number
 
+requser = input("user to message")
+
 # The path to your document
 document_path = 'Plan.pdf'  # Make sure this file exists in your directory
 
@@ -54,7 +56,7 @@ async def onlinehandler(event):
     elif event.action == 'typing':
         # User is typing
         print(f"[{username}] : typing")
-    if user.username == "dyyona":
+    if user.username == requser:
         await client.send_message(event.user_id, "Я вижу что ты в сети")
 
 # Start listening for incoming messages
