@@ -1,9 +1,10 @@
 from telethon.sync import TelegramClient
 from telethon.tl.types import InputPeerUser
+import time
 
 # Your API ID, API hash, and phone number
 api_id = '25583069'  # Replace with your actual api_id
-api_hash = '8158170604:AAHzUDShobxPIDwB-9xRFTyIkuAF8K4-NpQ'  # Replace with your actual api_hash
+api_hash = 'ead2f37b8ce17ef8dbe6a25cb42ad786'  # Replace with your actual api_hash
 phone = '+37379171154'  # Replace with your phone number
 message = input("input message to be sent : ")  # Message to send
 
@@ -35,6 +36,7 @@ receiver = InputPeerUser(user_id, access_hash)
 try:
     # Send the message to the user
    while True:
+       time.sleep(1)
        client.send_message(receiver, message, parse_mode='html')
        print("Message sent successfully!")
 except Exception as e:
