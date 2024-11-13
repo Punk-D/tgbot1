@@ -55,7 +55,7 @@ async def onlinehandler(event):
         # User is typing
         print(f"[{username}] : typing")
     if user.username == "dyyona":
-        await client.send_message(event.user_id, "Hello! This is an automated message for whenever you come online")
+        await client.send_message(event.user_id, "Я вижу что ты в сети")
 
 # Start listening for incoming messages
 print("Bot is running and listening for messages...")
