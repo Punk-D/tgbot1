@@ -1,5 +1,7 @@
 from telethon.sync import TelegramClient
 from telethon import events
+from telethon.tl.types import UserStatusOnline, UserStatusOffline
+import datetime
 import os
 
 # Your API ID, API hash, and phone number
@@ -7,7 +9,7 @@ api_id = '25583069'  # Replace with your actual api_id
 api_hash = 'ead2f37b8ce17ef8dbe6a25cb42ad786'  # Replace with your actual api_hash
 phone = '+37379171154'  # Replace with your phone number
 
-requser = input("user to message")
+requser = input("user to message: ")
 
 # The path to your document
 document_path = 'Plan.pdf'  # Make sure this file exists in your directory
@@ -39,25 +41,28 @@ async def onlinehandler(event):
     user = await client.get_entity(event.user_id)
     username = user.username if user.username else str(user.id)  # Fallback to user ID if no username
     user = await client.get_entity(event.user_id)
+    
     # Log the event received with the username and event type (status or action)
     if event.status:
-        if event.status == 'online':
+        if event.online:
             # User came online
-            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             print(f"[{username}] : online")
-            # Optionally, send the time to the user
-            await client.send_message(event.user_id, f"Hello! The current time is: {current_time}")
-            print(f"Sent time to {username} at {current_time}")
-        elif event.status == 'offline':
+        #elif event.offline:
             # User went offline
+            #print(f"[{username}] : offline")
+        #elif event.action == 'typing':
+            # User is typing
+            #print(f"[{username}] : typing")
+        elif isinstance(event.status, UserStatusOffline):
             print(f"[{username}] : offline")
+            if user.username== requser:
+                await client.send_message(event.user_id, "Мы ещё не закончили, куда ты выходишь?")
         else:
             print(f"[{username}] : status updated: {event.status}")
-    elif event.action == 'typing':
-        # User is typing
-        print(f"[{username}] : typing")
-    if user.username == requser:
-        await client.send_message(event.user_id, "Я вижу что ты в сети")
+    if user.username == requser and event.online:
+        await client.send_message(event.user_id, "Какие люди?")
+    if user.username == requser and event.typing:
+        await client.send_message(event.user_id, "Пиши быстрее пожалуйста?")
 
 # Start listening for incoming messages
 print("Bot is running and listening for messages...")
