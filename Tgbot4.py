@@ -102,25 +102,46 @@ def update_bot(message):
 def add_hint(message):
     # Only allow the authorized user to add hints
     if message.from_user.id == AUTHORIZED_USER_ID:
-        # Expecting format: /add_hint <hint> <response> or /add_hint <hint>
-        parts = message.text.split(' ', 2)  # Split only into 3 parts max
+        # Expecting format: /add_hint hint <hint_text> for simple hints
+        # or /add_hint <keyword> <response> for keyword-response pairs
+        parts = message.text.split(' ', 2)  # Split into up to 3 parts (command, hint/keyword, response)
+
         if len(parts) == 3:
-            # Adding a keyword-response pair
-            hint = parts[1].strip()
+            # This is a keyword-response pair
+            keyword = parts[1].strip()
             response = parts[2].strip()
-            hints_data["keyword_responses"][hint] = response
+            hints_data["keyword_responses"][keyword] = response
             save_hints_data(hints_data)
-            bot.send_message(message.chat.id, f"Keyword-Response pair added: '{hint}' -> '{response}'")
-            send_to_logbot(f"Added new keyword-response: '{hint}' -> '{response}'")
-        elif len(parts) == 2:
-            # Adding a simple hint (with spaces in the hint itself)
-            hint = parts[1].strip()
-            hints_data["simple_hints"].append(hint)
-            save_hints_data(hints_data)
-            bot.send_message(message.chat.id, f"Simple hint added: '{hint}'")
-            send_to_logbot(f"Added new simple hint: '{hint}'")
+            bot.send_message(message.chat.id, f"Keyword-Response pair added: '{keyword}' -> '{response}'")
+            send_to_logbot(f"Added new keyword-response: '{keyword}' -> '{response}'")
+        
+        elif len(parts) == 2 and parts[1].lower() == 'hint':
+            # This is a simple hint, following the format: /add_hint hint <hint_text>
+            bot.send_message(message.chat.id, "Please send the hint text you want to add.")
+            send_to_logbot(f"Bot to User: Please send the hint text you want to add.")
+            # Mark this user as adding a hint (set flag or track in memory)
+            users_in_freeman_mode[message.from_user.id]["adding_hint"] = True
+            save_freeman_mode_data(users_in_freeman_mode)
+        
         else:
-            bot.send_message(message.chat.id, "Invalid format. Use: /add_hint <hint> <response> or /add_hint <hint>")
+            bot.send_message(message.chat.id, "Invalid format. Use: /add_hint hint <hint_text> or /add_hint <keyword> <response>")
+            send_to_logbot(f"Invalid add_hint command from user: {message.from_user.username}")
+            
+@bot.message_handler(func=lambda message: 'adding_hint' in users_in_freeman_mode.get(message.from_user.id, {}))
+def handle_hint_text(message):
+    # If the user is in the process of adding a hint, save the hint text
+    if message.from_user.id in users_in_freeman_mode and users_in_freeman_mode[message.from_user.id].get("adding_hint"):
+        hint_text = message.text.strip()
+        # Add the hint to the simple hints list
+        hints_data["simple_hints"].append(hint_text)
+        save_hints_data(hints_data)
+        bot.send_message(message.chat.id, f"Simple hint added: '{hint_text}'")
+        send_to_logbot(f"Added new simple hint: '{hint_text}'")
+        
+        # Reset the flag
+        users_in_freeman_mode[message.from_user.id]["adding_hint"] = False
+        save_freeman_mode_data(users_in_freeman_mode)
+
 
 
 @bot.message_handler(commands=['browse_hints'])
