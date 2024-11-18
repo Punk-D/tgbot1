@@ -103,17 +103,17 @@ def add_hint(message):
     # Only allow the authorized user to add hints
     if message.from_user.id == AUTHORIZED_USER_ID:
         # Expecting format: /add_hint <hint> <response> or /add_hint <hint>
-        parts = message.text.split(' ', 2)
+        parts = message.text.split(' ', 2)  # Split only into 3 parts max
         if len(parts) == 3:
             # Adding a keyword-response pair
             hint = parts[1].strip()
             response = parts[2].strip()
             hints_data["keyword_responses"][hint] = response
             save_hints_data(hints_data)
-            bot.send_message(message.chat.id, f"Hint and response added: '{hint}' -> '{response}'")
+            bot.send_message(message.chat.id, f"Keyword-Response pair added: '{hint}' -> '{response}'")
             send_to_logbot(f"Added new keyword-response: '{hint}' -> '{response}'")
         elif len(parts) == 2:
-            # Adding a simple hint to the list
+            # Adding a simple hint (with spaces in the hint itself)
             hint = parts[1].strip()
             hints_data["simple_hints"].append(hint)
             save_hints_data(hints_data)
@@ -121,6 +121,7 @@ def add_hint(message):
             send_to_logbot(f"Added new simple hint: '{hint}'")
         else:
             bot.send_message(message.chat.id, "Invalid format. Use: /add_hint <hint> <response> or /add_hint <hint>")
+
 
 @bot.message_handler(commands=['browse_hints'])
 def browse_hints(message):
