@@ -1,22 +1,8 @@
-To modify the code as per your requirements, we need to make the following changes:
-
-1. **Allow the authorized user to add hints and keywords**: We'll add a command that allows the authorized user to send a hint or a keyword to the bot along with its specific response. The bot will store these hints and responses in a dictionary and save them to a JSON file.
-
-2. **Change the hint logic**: Instead of sending a random hint, we will now iterate through the list of hints in order, providing the next unused hint sequentially. Once all hints have been given, the bot will notify the user.
-
-3. **Change the cooldown to 2 hours (7200 seconds)**.
-
-4. **Send bot-user responses to the logbot**: Whenever the bot sends a message to the user, it should also send that message to the `chatlogbot` (which logs all interactions).
-
-### Here's the modified code:
-
-```python
 import telebot
 import subprocess
 import os
 import sys
 import json
-import random
 import time
 
 # Bot token and authorized user ID for updates
@@ -28,12 +14,7 @@ CHATLOGTOKEN = '7239305488:AAG7CVDzdbpU_ac1oskQVBGijlQMukUay2o'
 # Contract number and predefined responses in Freeman Mode
 CONTRACT_NUMBER = '413'
 FREEMAN_MODE_FILE = 'freeman_mode_users.json'  # JSON file to store user progress
-
-# Predefined Freeman Mode responses
-responses = {
-    "diary": "Oh, you want to see my diary? I bet you already know where it is. The key to decrypt those files is: influenceproject",
-    "code": "The company hides more than it shows. Watch out for subtle messages."
-}
+HINTS_FILE = 'hints_data.json'  # JSON file to store hints and responses
 
 # Load Freeman Mode data from file
 def load_freeman_mode_data():
@@ -47,22 +28,27 @@ def save_freeman_mode_data(data):
     with open(FREEMAN_MODE_FILE, 'w') as file:
         json.dump(data, file)
 
+# Load hints data from JSON file (or create it if it doesn't exist)
+def load_hints_data():
+    if os.path.exists(HINTS_FILE):
+        with open(HINTS_FILE, 'r') as file:
+            return json.load(file)
+    return {"simple_hints": [], "keyword_responses": {}}
+
+# Save hints data to JSON file
+def save_hints_data(data):
+    with open(HINTS_FILE, 'w') as file:
+        json.dump(data, file)
+
 # Initialize bot and load data
 bot = telebot.TeleBot(TOKEN)
 users_in_freeman_mode = load_freeman_mode_data()
+hints_data = load_hints_data()
 
 chatlogbot = telebot.TeleBot(CHATLOGTOKEN)
 
 # Cooldown duration in seconds (2 hours = 7200 seconds)
 HINT_COOLDOWN = 7200  # 2 hours
-
-# Initialize custom hints list (can be expanded or modified)
-custom_hints = [
-    "Be attentive. Start with CBC 128 encryption.",
-    "Remember, the files are encrypted for a reason.",
-    "Subtle details matter. Trust your instincts.",
-    "The key is hidden, but it’s not far away.",
-]
 
 # Function to send log message to chatlogbot
 def send_to_logbot(message_text):
@@ -71,6 +57,31 @@ def send_to_logbot(message_text):
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     bot.send_message(message.chat.id, "Welcome to SyncraHelperBot. I’m here to assist you with basic calculations. Send me a math problem!")
+
+@bot.message_handler(commands=['help'])
+def help_command(message):
+    # Only allow the authorized user to access the help command
+    if message.from_user.id == AUTHORIZED_USER_ID:
+        help_text = (
+            "Here’s a list of available commands you can use:\n\n"
+            "/start - Start interacting with the bot.\n\n"
+            "/update - Update the bot from the GitHub repository (only for authorized users).\n\n"
+            "/add_hint <hint> - Add a simple hint to the list.\n"
+            "/add_hint <hint> <response> - Add a keyword-response pair to the hints.\n\n"
+            "/browse_hints - Browse all available hints with their IDs.\n\n"
+            "/remove_hint hint<ID> - Remove a hint by its ID (e.g., 'hint1', 'hint2').\n\n"
+            "Freeman Mode:\n"
+            "   - When in Freeman Mode, you can interact with hints and responses based on the contract number.\n"
+            "   - Type 'hint' to get a hint after the cooldown period.\n"
+            "   - Type a keyword to get the corresponding response.\n\n"
+            "Hint Cooldown: You can only request a hint once every 2 hours.\n\n"
+            "Please use these commands responsibly and feel free to reach out if you need further assistance."
+        )
+        bot.send_message(message.chat.id, help_text)
+        send_to_logbot(f"Bot to User: Help message sent.")
+    else:
+        bot.send_message(message.chat.id, "You are not authorized to view help commands.")
+
 
 @bot.message_handler(commands=['update'])
 def update_bot(message):
@@ -91,18 +102,82 @@ def update_bot(message):
 def add_hint(message):
     # Only allow the authorized user to add hints
     if message.from_user.id == AUTHORIZED_USER_ID:
-        # Expecting format: /add_hint <hint> <response>
+        # Expecting format: /add_hint <hint> <response> or /add_hint <hint>
         parts = message.text.split(' ', 2)
         if len(parts) == 3:
+            # Adding a keyword-response pair
             hint = parts[1].strip()
             response = parts[2].strip()
-            custom_hints.append(hint)
-            responses[hint] = response
-            save_freeman_mode_data(users_in_freeman_mode)
+            hints_data["keyword_responses"][hint] = response
+            save_hints_data(hints_data)
             bot.send_message(message.chat.id, f"Hint and response added: '{hint}' -> '{response}'")
-            send_to_logbot(f"Added new hint: '{hint}' with response: '{response}'")
+            send_to_logbot(f"Added new keyword-response: '{hint}' -> '{response}'")
+        elif len(parts) == 2:
+            # Adding a simple hint to the list
+            hint = parts[1].strip()
+            hints_data["simple_hints"].append(hint)
+            save_hints_data(hints_data)
+            bot.send_message(message.chat.id, f"Simple hint added: '{hint}'")
+            send_to_logbot(f"Added new simple hint: '{hint}'")
         else:
-            bot.send_message(message.chat.id, "Invalid format. Use: /add_hint <hint> <response>")
+            bot.send_message(message.chat.id, "Invalid format. Use: /add_hint <hint> <response> or /add_hint <hint>")
+
+@bot.message_handler(commands=['browse_hints'])
+def browse_hints(message):
+    # Only allow the authorized user to browse hints
+    if message.from_user.id == AUTHORIZED_USER_ID:
+        hint_list = []
+        
+        # Simple hints browsing
+        for idx, hint in enumerate(hints_data["simple_hints"], start=1):
+            hint_list.append(f"hint{idx}: {hint}")
+        
+        # Keyword response browsing
+        for idx, (hint, response) in enumerate(hints_data["keyword_responses"].items(), start=len(hints_data["simple_hints"]) + 1):
+            hint_list.append(f"hint{idx}: '{hint}' -> '{response}'")
+        
+        if hint_list:
+            bot.send_message(message.chat.id, "\n".join(hint_list))
+            send_to_logbot(f"Bot to User: Browsing hints: \n" + "\n".join(hint_list))
+        else:
+            bot.send_message(message.chat.id, "No hints available yet.")
+            send_to_logbot(f"Bot to User: No hints available yet.")
+
+@bot.message_handler(commands=['remove_hint'])
+def remove_hint(message):
+    # Only allow the authorized user to remove hints
+    if message.from_user.id == AUTHORIZED_USER_ID:
+        # Expecting format: /remove_hint hint<ID>
+        parts = message.text.split(' ', 1)
+        if len(parts) == 2:
+            hint_id = parts[1].strip()
+            try:
+                # Determine which type of hint (simple or keyword) to remove
+                if hint_id.startswith('hint'):
+                    idx = int(hint_id[4:]) - 1  # Remove hint with index (hint1 -> 0, hint2 -> 1, etc.)
+                    if idx < len(hints_data["simple_hints"]):
+                        removed_hint = hints_data["simple_hints"].pop(idx)
+                        save_hints_data(hints_data)
+                        bot.send_message(message.chat.id, f"Removed simple hint: '{removed_hint}'")
+                        send_to_logbot(f"Removed simple hint: '{removed_hint}'")
+                    elif idx - len(hints_data["simple_hints"]) < len(hints_data["keyword_responses"]):
+                        # Adjust index for keyword responses
+                        keyword_idx = idx - len(hints_data["simple_hints"])
+                        removed_keyword = list(hints_data["keyword_responses"].keys())[keyword_idx]
+                        removed_response = hints_data["keyword_responses"].pop(removed_keyword)
+                        save_hints_data(hints_data)
+                        bot.send_message(message.chat.id, f"Removed keyword hint: '{removed_keyword}' -> '{removed_response}'")
+                        send_to_logbot(f"Removed keyword hint: '{removed_keyword}' -> '{removed_response}'")
+                    else:
+                        bot.send_message(message.chat.id, f"Hint ID '{hint_id}' does not exist.")
+                        send_to_logbot(f"Bot to User: Hint ID '{hint_id}' does not exist.")
+                else:
+                    bot.send_message(message.chat.id, "Invalid hint ID format. Use 'hint<ID>'.")
+            except ValueError:
+                bot.send_message(message.chat.id, "Invalid hint ID format. Use 'hint<ID>'.")
+                send_to_logbot(f"Bot to User: Invalid hint ID format. Use 'hint<ID>'.")
+        else:
+            bot.send_message(message.chat.id, "Please provide a hint ID to remove. Use: /remove_hint hint<ID>")
 
 @bot.message_handler(func=lambda message: True)
 def handle_message(message):
@@ -112,9 +187,9 @@ def handle_message(message):
     # Check if the user is in Freeman Mode
     if user_id in users_in_freeman_mode:
         # Handle "Freeman Mode" responses
-        if message.text in responses and message.text not in users_in_freeman_mode[user_id]["responses_given"]:
-            bot.send_message(message.chat.id, responses[message.text])
-            send_to_logbot(f"Bot to User: {responses[message.text]}")
+        if message.text in hints_data["keyword_responses"] and message.text not in users_in_freeman_mode[user_id]["responses_given"]:
+            bot.send_message(message.chat.id, hints_data["keyword_responses"][message.text])
+            send_to_logbot(f"Bot to User: {hints_data['keyword_responses'][message.text]}")
             users_in_freeman_mode[user_id]["responses_given"].append(message.text)  # Mark response as used
             save_freeman_mode_data(users_in_freeman_mode)  # Save the updated data
         elif message.text in users_in_freeman_mode[user_id]["responses_given"]:
@@ -134,12 +209,12 @@ def handle_message(message):
                 bot.send_message(message.chat.id, f"You must wait {hours} hours, {minutes} minutes before asking for another hint.")
                 send_to_logbot(f"Bot to User: You must wait {hours} hours, {minutes} minutes before asking for another hint.")
             else:
-                # Check if there are unused hints
-                unused_hints = [hint for hint in custom_hints if hint not in users_in_freeman_mode[user_id]["hints_given"]]
+                # Provide the next unused hint in the list (simple hints first)
+                unused_hints = [hint for hint in hints_data["simple_hints"] if hint not in users_in_freeman_mode[user_id]["hints_given"]]
     
                 if unused_hints:
-                    # Provide the next unused hint in the list
-                    hint = unused_hints[0]  # Get the first unused hint
+                    # Provide the first unused simple hint
+                    hint = unused_hints[0]
                     bot.send_message(message.chat.id, hint)
                     send_to_logbot(f"Bot to User: {hint}")
                     # Track the provided hint
@@ -173,4 +248,13 @@ def handle_message(message):
     
     else:
         # Default response for unrecognized messages outside of Freeman Mode
-        bot.send_message(message.chat.id, "I don't know who you are and what you want. If you won't type your number, I'll ignore you
+        bot.send_message(message.chat.id, "I don't know who you are and what you want. If you won't type your number, I'll ignore you.")
+        send_to_logbot("Bot to User: I don't know who you are and what you want. If you won't type your number, I'll ignore you.")
+
+# Start polling to keep the bot running
+while True:
+    try:
+        bot.polling(timeout=86400, allowed_updates=None)  # Set high timeout and auto-reconnect
+    except Exception as e:
+        print(f"Bot crashed due to {e}. Restarting in 5 seconds...")
+        time.sleep(5)  # Brief pause before restarting
