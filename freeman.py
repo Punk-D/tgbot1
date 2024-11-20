@@ -56,7 +56,7 @@ def send_to_logbot(message_text):
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    bot.send_message(message.chat.id, "Welcome to SyncraHelperBot. I’m here to assist you with basic calculations. Send me a math problem!")
+    bot.send_message(message.chat.id, "Welcome to my math bot. Send me a math problem!")
 
 @bot.message_handler(commands=['help'])
 def help_command(message):
@@ -64,23 +64,28 @@ def help_command(message):
     if message.from_user.id == AUTHORIZED_USER_ID:
         help_text = (
             "Here’s a list of available commands you can use:\n\n"
-            "/start - Start interacting with the bot.\n\n"
+            "/start - Start interacting with the bot.\n"
+            "/help - Display this help message.\n"
             "/update - Update the bot from the GitHub repository (only for authorized users).\n\n"
-            "/add_hint <hint> - Add a simple hint to the list.\n"
-            "/add_hint <hint> <response> - Add a keyword-response pair to the hints.\n\n"
-            "/browse_hints - Browse all available hints with their IDs.\n\n"
+            "Hints Management:\n"
+            "/add_hint hint <hint_text> - Add a simple hint to the list.\n"
+            "/add_hint <keyword> <response> - Add a keyword-response pair.\n"
+            "/browse_hints - Browse all available hints with their IDs.\n"
             "/remove_hint hint<ID> - Remove a hint by its ID (e.g., 'hint1', 'hint2').\n\n"
             "Freeman Mode:\n"
-            "   - When in Freeman Mode, you can interact with hints and responses based on the contract number.\n"
-            "   - Type 'hint' to get a hint after the cooldown period.\n"
-            "   - Type a keyword to get the corresponding response.\n\n"
-            "Hint Cooldown: You can only request a hint once every 2 hours.\n\n"
-            "Please use these commands responsibly and feel free to reach out if you need further assistance."
+            "   - Type the contract number ('413') to activate Freeman Mode.\n"
+            "   - Use 'hint' to receive hints (with a cooldown of 2 hours).\n"
+            "   - Use a keyword to get the corresponding response.\n"
+            "   - Previously used keywords will not be repeated.\n\n"
+            "Math Features:\n"
+            "   - Enter a mathematical expression (e.g., '2+2') to get the answer.\n\n"
+            "Note: Unauthorized users have limited access to bot features."
         )
         bot.send_message(message.chat.id, help_text)
-        send_to_logbot(f"Bot to User: Help message sent.")
+        send_to_logbot("Bot to User: Help message sent.")
     else:
         bot.send_message(message.chat.id, "You are not authorized to view help commands.")
+
 
 
 @bot.message_handler(commands=['update'])
@@ -102,30 +107,42 @@ def update_bot(message):
 def add_hint(message):
     # Only allow the authorized user to add hints
     if message.from_user.id == AUTHORIZED_USER_ID:
-        # Expecting format: /add_hint hint <hint_text> for simple hints
-        # or /add_hint <keyword> <response> for keyword-response pairs
-        parts = message.text.split(' ', 2)  # Split into up to 3 parts (command, hint/keyword, response)
+        # Expecting format: /add_hint hint <hint_text> or /add_hint <keyword> <response>
+        parts = message.text.split(' ', 2)  # Split into command, keyword, and hint/response
 
-        if len(parts) == 3:
-            # This is a keyword-response pair
-            keyword = parts[1].strip()
-            response = parts[2].strip()
-            hints_data["keyword_responses"][keyword] = response
-            save_hints_data(hints_data)
-            bot.send_message(message.chat.id, f"Keyword-Response pair added: '{keyword}' -> '{response}'")
-            send_to_logbot(f"Added new keyword-response: '{keyword}' -> '{response}'")
-        
-        elif len(parts) == 2 and parts[1].lower() == 'hint':
-            # This is a simple hint, following the format: /add_hint hint <hint_text>
-            bot.send_message(message.chat.id, "Please send the hint text you want to add.")
-            send_to_logbot(f"Bot to User: Please send the hint text you want to add.")
-            # Mark this user as adding a hint (set flag or track in memory)
-            users_in_freeman_mode[message.from_user.id]["adding_hint"] = True
-            save_freeman_mode_data(users_in_freeman_mode)
-        
+        if len(parts) < 3:
+            bot.send_message(
+                message.chat.id,
+                "Invalid format. Use:\n"
+                "/add_hint hint <hint_text> for simple hints\n"
+                "/add_hint <keyword> <response> for keyword-response pairs"
+            )
+            return
+
+        keyword = parts[1].strip().lower()
+        hint_or_response = parts[2].strip()
+
+        if keyword == "hint":
+            # Add a simple hint
+            if hint_or_response not in hints_data["simple_hints"]:
+                hints_data["simple_hints"].append(hint_or_response)
+                save_hints_data(hints_data)  # Save updated hints
+                bot.send_message(message.chat.id, f"Simple hint added: '{hint_or_response}'")
+                send_to_logbot(f"Added simple hint: '{hint_or_response}'")
+            else:
+                bot.send_message(message.chat.id, "This hint already exists in the simple hints list.")
         else:
-            bot.send_message(message.chat.id, "Invalid format. Use: /add_hint hint <hint_text> or /add_hint <keyword> <response>")
-            send_to_logbot(f"Invalid add_hint command from user: {message.from_user.username}")
+            # Add a keyword-response pair
+            if keyword not in hints_data["keyword_responses"]:
+                hints_data["keyword_responses"][keyword] = hint_or_response
+                save_hints_data(hints_data)  # Save updated hints
+                bot.send_message(message.chat.id, f"Keyword-response pair added: '{keyword}' -> '{hint_or_response}'")
+                send_to_logbot(f"Added keyword-response pair: '{keyword}' -> '{hint_or_response}'")
+            else:
+                bot.send_message(message.chat.id, f"The keyword '{keyword}' already exists. Use another keyword.")
+    else:
+        bot.send_message(message.chat.id, "You are not authorized to use this command.")
+
             
 @bot.message_handler(func=lambda message: 'adding_hint' in users_in_freeman_mode.get(message.from_user.id, {}))
 def handle_hint_text(message):
