@@ -4,33 +4,25 @@ from telethon.tl.types import UserStatusOnline, UserStatusOffline
 import datetime
 import os
 
-# Your API ID, API hash, and phone number
 api_id = '25583069'  # Replace with your actual api_id
 api_hash = 'ead2f37b8ce17ef8dbe6a25cb42ad786'  # Replace with your actual api_hash
 phone = '+37379171154'  # Replace with your phone number
 
 requser = input("user to message: ")
 
-# The path to your document
-document_path = 'Plan.pdf'  # Make sure this file exists in your directory
+document_path = 'Plan.pdf'  
 
-# Create a Telegram session
 client = TelegramClient('session', api_id, api_hash)
 
-# Connect and authorize with your phone number
 client.connect()
 
-# If not authorized, sign in
 if not client.is_user_authorized():
     client.send_code_request(phone)
     client.sign_in(phone, input('Enter the code: '))
 
-# Event handler for receiving new messages
 @client.on(events.NewMessage)
 async def handler(event):
-    # Check if the received message is "Send me the plan"
     if event.text.lower() == "send me the plan":
-        # Send the document to the user
         await event.reply(file=document_path)
         print(f"Sent 'Plan.pdf' to {event.sender_id}")
     else:
@@ -42,7 +34,6 @@ async def onlinehandler(event):
     username = user.username if user.username else str(user.id)  # Fallback to user ID if no username
     user = await client.get_entity(event.user_id)
     
-    # Log the event received with the username and event type (status or action)
     if event.status:
         if event.online:
             # User came online
@@ -56,17 +47,15 @@ async def onlinehandler(event):
         elif isinstance(event.status, UserStatusOffline):
             print(f"[{username}] : offline")
             if user.username== requser:
-                await client.send_message(event.user_id, "Мы ещё не закончили, куда ты выходишь?")
+                await client.send_message(event.user_id, "Don't go offline, please, I'll miss you 😥")
         else:
             print(f"[{username}] : status updated: {event.status}")
     if user.username == requser and event.online:
-        await client.send_message(event.user_id, "Какие люди?")
+        await client.send_message(event.user_id, "Howdy? 😊")
     if user.username == requser and event.typing:
-        await client.send_message(event.user_id, "Пиши быстрее пожалуйста?")
+        await client.send_message(event.user_id, "😶")
 
-# Start listening for incoming messages
 print("Bot is running and listening for messages...")
 client.run_until_disconnected()
 
-# Disconnect the session when done
 client.disconnect()
