@@ -3,7 +3,7 @@ from telebot import TeleBot, types
 from threading import Thread
 
 # Initialize the bot
-BOT_TOKEN = "your_bot_token"
+BOT_TOKEN = "7560808732:AAGhVR8Ik8of2rDOhVjxqonE5dNLPGSmVv4"
 bot = TeleBot(BOT_TOKEN)
 
 # Define the list of keywords
