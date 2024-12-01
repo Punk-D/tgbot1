@@ -33,6 +33,10 @@ def handle_message(message):
         Thread(target=send_reminder, args=(message.chat.id, keyword_to_remind)).start()
 
 
-# Start the bot
-print("Bot is running...")
-bot.polling()
+# Start polling to keep the bot running
+while True:
+    try:
+        bot.polling(timeout=86400, allowed_updates=None)  # Set high timeout and auto-reconnect
+    except Exception as e:
+        print(f"Bot crashed due to {e}. Restarting in 5 seconds...")
+        time.sleep(5)  # Brief pause before restarting
