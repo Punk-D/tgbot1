@@ -9,7 +9,7 @@ BOT_TOKEN = "7787695982:AAEIs-cge0gW6fu4o9vdO02MyTkMHuQjgPc"
 bot = TeleBot(BOT_TOKEN)
 
 # Define constants
-REMINDER_DELAY = 120  # Delay time in seconds (2 minutes for testing)
+REMINDER_DELAY = 60*30  # Delay time in seconds (30 minutes )
 
 # Define the list of keywords
 keywords = [
@@ -50,7 +50,7 @@ def handle_message(message):
 
     if detected_keywords:
         # Respond to the user immediately
-        bot.reply_to(message, "Напомню через 2 минуты!")
+        bot.reply_to(message, "Напомню через 30 минут!")
 
         # Add each keyword to the queue with a scheduled datetime
         for keyword in detected_keywords:
