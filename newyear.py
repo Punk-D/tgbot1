@@ -4,7 +4,7 @@ import threading
 import time
 
 # Replace 'YOUR_BOT_TOKEN' with the bot token you got from BotFather
-BOT_TOKEN = "YOUR_BOT_TOKEN"
+BOT_TOKEN = '8158170604:AAHzUDShobxPIDwB-9xRFTyIkuAF8K4-NpQ'
 bot = telebot.TeleBot(BOT_TOKEN)
 
 # List to store user IDs of those who sent /start
