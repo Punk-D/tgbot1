@@ -47,4 +47,9 @@ def respond_to_message(message):
     bot.reply_to(message, f"Days till New Year: {days_till_new_year()}")
 
 # Start polling
-bot.polling()
+while True:
+    try:
+        bot.polling(timeout=86400, allowed_updates=None)  # Set high timeout and auto-reconnect
+    except Exception as e:
+        print(f"Bot crashed due to {e}. Restarting in 5 seconds...")
+        time.sleep(5)  # Brief pause before restarting
